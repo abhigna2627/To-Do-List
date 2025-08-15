@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Task Calendar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #3e3e3e, #1E90FF);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #fff;
+            text-align: center;
+        }
+        .header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .controls select, .controls button {
+            padding: 12px;
+            font-size: 18px;
+            border-radius: 5px;
+            background-color: #fff;
+            color: #333;
+            width: 160px;
+            height: 45px;
+            cursor: pointer;
+            border: none;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 15px;
+        }
+        .day {
+            background: rgba(255, 255, 255, 0.4);
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 22px;
+            font-weight: bold;
+            position: relative;
+        }
+        .edit-icon {
+            font-size: 22px;
+            color: #32CD32;
+            cursor: pointer;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+        .task-display {
+            font-size: 18px;
+            color: white;
+            background: rgba(50, 205, 50, 0.8);
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            z-index: 1000;
+        }
+        .modal input, .modal select {
+            display: block;
+            margin: 10px auto;
+            padding: 10px;
+            font-size: 16px;
+            width: 80%;
+        }
+        .modal button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+            background: #32CD32;
+            border: none;
+            color: white;
+            border-radius: 5px;
+        }
+        .priority-section {
+            width: 90%;
+            margin: 30px auto;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .priority-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .task-list {
+            font-size: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <center><b>THE ULTIMATE TASK MANAGER</b></center><br><hr><br>
+
+    <div class="header" id="current-date"></div>
+
+    <div class="controls">
+        <select id="year-selector"></select>
+        <select id="month-selector"></select>
+        <button onclick="showCalendar(); updatePriorityTasks();">Show Calendar</button>
+    </div>
+
+    <div id="calendar" class="calendar"></div>
+
+    <div id="task-modal" class="modal">
+        <h2 id="modal-title">Add/Edit Task</h2>
+        <input type="text" id="task-name" placeholder="Task Name">
+        <select id="task-priority">
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
+        </select>
+        <button onclick="saveTask()">Save Task</button>
+    </div>
+
+    <div class="priority-section">
+        <h2 class="priority-title">High Priority Tasks</h2>
+        <div id="high-priority" class="task-list"></div>
+        <h2 class="priority-title">Medium Priority Tasks</h2>
+        <div id="medium-priority" class="task-list"></div>
+        <h2 class="priority-title">Low Priority Tasks</h2>
+        <div id="low-priority" class="task-list"></div>
+    </div>
+
+    <script>
+        let selectedDate = null;
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
+                              hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById("current-date").textContent = now.toLocaleString('en-US', options);
+        }
+        setInterval(updateCurrentDate, 1000);
+        updateCurrentDate();
+
+        function populateDropdowns() {
+            const yearSelector = document.getElementById("year-selector");
+            const monthSelector = document.getElementById("month-selector");
+
+            for (let i = 2020; i <= 2030; i++) {
+                yearSelector.innerHTML += `<option value="${i}">${i}</option>`;
+            }
+
+            const months = ["January", "February", "March", "April", "May", "June",
+                            "July", "August", "September", "October", "November", "December"];
+            months.forEach((month, index) => {
+                monthSelector.innerHTML += `<option value="${index}">${month}</option>`;
+            });
+
+            const now = new Date();
+            yearSelector.value = now.getFullYear();
+            monthSelector.value = now.getMonth();
+        }
+
+        function showCalendar() {
+            const year = document.getElementById("year-selector").value;
+            const month = document.getElementById("month-selector").value;
+            const firstDay = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, Number(month) + 1, 0).getDate();
+            const calendar = document.getElementById("calendar");
+            calendar.innerHTML = "";
+
+            const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            daysOfWeek.forEach(day => {
+                calendar.innerHTML += `<div class="day">${day}</div>`;
+            });
+
+            for (let i = 0; i < firstDay; i++) {
+                calendar.innerHTML += `<div class="day"></div>`;
+            }
+
+            for (let date = 1; date <= lastDate; date++) {
+                const task = JSON.parse(localStorage.getItem(`${year}-${month}-${date}`)) || {};
+                calendar.innerHTML += ` 
+                    <div class="day">
+                        <span>${date}</span>
+                        <span class="edit-icon" onclick="openModal(${date})">✎</span>
+                        ${task.name ? `<div class="task-display">${task.name} (${task.priority})</div>` : ""}
+                    </div>`;
+            }
+
+            updatePriorityTasks();
+        }
+
+        function openModal(date, taskName = "", taskPriority = "Low") {
+            document.getElementById("task-modal").style.display = "block";
+            document.getElementById("modal-title").textContent = `Add/Edit Task for ${date}`;
+            document.getElementById("task-name").value = taskName;
+            document.getElementById("task-priority").value = taskPriority;
+            
+            const year = document.getElementById("year-selector").value;
+            const month = document.getElementById("month-selector").value;
+
+            document.getElementById("task-modal").dataset.date = date;
+            document.getElementById("task-modal").dataset.year = year;
+            document.getElementById("task-modal").dataset.month = month;
+        }
+
+        function saveTask() {
+            const year = document.getElementById("task-modal").dataset.year;
+            const month = document.getElementById("task-modal").dataset.month;
+            const date = document.getElementById("task-modal").dataset.date;
+
+            const taskName = document.getElementById("task-name").value;
+            const taskPriority = document.getElementById("task-priority").value;
+
+            if (taskName.trim() === "") {
+                alert("Please enter a task name.");
+                return;
+            }
+
+            localStorage.setItem(`${year}-${month}-${date}`, JSON.stringify({
+                name: taskName,
+                priority: taskPriority
+            }));
+
+            document.getElementById("task-modal").style.display = "none";
+            showCalendar();
+            updatePriorityTasks();
+        }
+
+        function updatePriorityTasks() {
+            const selectedYear = document.getElementById("year-selector").value;
+            const selectedMonth = document.getElementById("month-selector").value;
+
+            // Clear old priority lists
+            document.getElementById("high-priority").innerHTML = "";
+            document.getElementById("medium-priority").innerHTML = "";
+            document.getElementById("low-priority").innerHTML = "";
+
+            // Go through all saved tasks
+            Object.keys(localStorage).forEach(key => {
+                const parts = key.split('-');
+                if (parts.length === 3) {
+                    const taskYear = parts[0];
+                    const taskMonth = parts[1];
+
+                    // Fix: compare as numbers
+                    if (parseInt(taskYear) == parseInt(selectedYear) && parseInt(taskMonth) == parseInt(selectedMonth)) {
+                        const task = JSON.parse(localStorage.getItem(key));
+                        if (task) {
+                            if (task.priority === "High") {
+                                document.getElementById("high-priority").innerHTML += `<p>${task.name}</p>`;
+                            } else if (task.priority === "Medium") {
+                                document.getElementById("medium-priority").innerHTML += `<p>${task.name}</p>`;
+                            } else if (task.priority === "Low") {
+                                document.getElementById("low-priority").innerHTML += `<p>${task.name}</p>`;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById("task-modal");
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        populateDropdowns();
+        showCalendar();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List & Scheduler</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            background: #0d1117;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            background: #161b22;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.2);
+        }
+        h1 {
+            font-size: 26px;
+            margin-bottom: 20px;
+            color: #58a6ff;
+        }
+        .task-input {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        input, select, button {
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+        }
+        button {
+            background: #238636;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(35, 134, 54, 0.5);
+        }
+        button:hover {
+            background: #2ea043;
+        }
+        .tasks-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .today-section, .completed-section, .discarded-section {
+            width: 45%;
+            padding: 15px;
+            border-radius: 10px;
+            background: #21262d;
+            box-shadow: 0 0 10px rgba(88, 166, 255, 0.2);
+        }
+        h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #58a6ff;
+        }
+        .task-list {
+            list-style: none;
+            padding: 0;
+        }
+        .task-list li {
+            background: #30363d;
+            color: white;
+            padding: 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .task-list li.red {
+            background: #da3633;
+            animation: blink 1s infinite alternate;
+        }
+        @keyframes blink {
+            from { opacity: 1; }
+            to { opacity: 0.6; }
+        }
+        .task-list li.green {
+            background: #2ea043;
+        }
+        button.complete, button.delete {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        button.complete {
+            color: #2ea043;
+        }
+        button.delete {
+            color: #da3633;
+        }
+        .week-container {
+            margin-top: 20px;
+        }
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+        .day {
+            background: #21262d;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(88, 166, 255, 0.2);
+        }
+        .date-time {
+            font-size: 18px;
+            color: #58a6ff;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 Weekly To-Do Scheduler</h1>
+
+        <div class="date-time" id="date-time"></div>
+
+        <div class="task-input">
+            <input type="text" id="new-task" placeholder="Enter task...">
+            <input type="time" id="task-time">
+            <select id="task-day">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+            </select>
+            <button onclick="addTask()">➕ Add</button>
+        </div>
+
+        <div class="tasks-container">
+            <div class="today-section">
+                <h2>✅ Today's Tasks</h2>
+                <ul id="today-tasks" class="task-list"></ul>
+            </div>
+
+            <div class="completed-section">
+                <h2>✔ Completed Tasks</h2>
+                <ul id="completed-tasks" class="task-list"></ul>
+            </div>
+
+            <div class="discarded-section">
+                <h2>❌ Discarded Tasks</h2>
+                <ul id="discarded-tasks" class="task-list"></ul>
+            </div>
+        </div>
+
+        <div class="week-container">
+            <h2>📅 Weekly Schedule</h2>
+            <div class="week-grid">
+                <div id="Monday" class="day"><h3>Monday</h3><ul class="task-list"></ul></div>
+                <div id="Tuesday" class="day"><h3>Tuesday</h3><ul class="task-list"></ul></div>
+                <div id="Wednesday" class="day"><h3>Wednesday</h3><ul class="task-list"></ul></div>
+                <div id="Thursday" class="day"><h3>Thursday</h3><ul class="task-list"></ul></div>
+                <div id="Friday" class="day"><h3>Friday</h3><ul class="task-list"></ul></div>
+                <div id="Saturday" class="day"><h3>Saturday</h3><ul class="task-list"></ul></div>
+                <div id="Sunday" class="day"><h3>Sunday</h3><ul class="task-list"></ul></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadTasks();
+            moveTodayTasks();
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            setInterval(updateTaskColors, 60000); // Update task colors every 1 minute
+        });
+
+        // Real-time Date and Time Update
+        function updateDateTime() {
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('en-IN', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+            document.getElementById('date-time').innerText = dateTimeString;
+        }
+
+        // **Add Task to Specific Weekday**
+        function addTask() {
+            let taskText = document.getElementById("new-task").value;
+            let taskDay = document.getElementById("task-day").value;
+            let taskTime = document.getElementById("task-time").value;
+
+            if (!taskText || !taskTime) {
+                alert("Please enter both task and time!");
+                return;
+            }
+
+            let li = createTaskElement(taskText, taskTime);
+            document.getElementById(taskDay).querySelector(".task-list").appendChild(li);
+            saveTasks();
+            document.getElementById("new-task").value = "";
+        }
+
+        // **Move today's tasks automatically**
+        function moveTodayTasks() {
+            let todayName = new Date().toLocaleDateString("en-US", { weekday: "long" });
+            let todayTasksList = document.getElementById("today-tasks");
+            let todayColumnTasks = document.getElementById(todayName).querySelectorAll(".task-list li");
+
+            todayColumnTasks.forEach(task => {
+                todayTasksList.appendChild(task);
+            });
+
+            saveTasks();
+        }
+
+        // **Create a Task Element**
+        function createTaskElement(taskText, time) {
+            let li = document.createElement("li");
+            li.setAttribute("draggable", true);
+            li.innerHTML = `
+                <span>${taskText} <small>(${time})</small></span>
+                <button class="complete" onclick="completeTask(this)">✔</button>
+                <button class="delete" onclick="deleteTask(this)">❌</button>
+                <button class="discard" onclick="discardTask(this)">❌ Discard</button>
+            `;
+            li.addEventListener('dragstart', dragStart);
+            li.addEventListener('dragover', dragOver);
+            li.addEventListener('drop', dropTask);
+            return li;
+        }
+
+        // **Mark Task as Completed**
+        function completeTask(button) {
+            let task = button.parentElement;
+            task.classList.add("green");
+            task.querySelector(".complete").style.display = "none"; // Hide the check mark
+            document.getElementById("completed-tasks").appendChild(task);
+            saveTasks();
+        }
+
+        // **Delete Task**
+        function deleteTask(button) {
+            button.parentElement.remove();
+            saveTasks();
+        }
+
+        // **Discard Task**
+        function discardTask(button) {
+            let task = button.parentElement;
+            task.classList.add("red");
+            task.querySelector(".discard").style.display = "none"; // Hide the discard icon
+            document.getElementById("discarded-tasks").appendChild(task);
+            saveTasks();
+        }
+
+        // **Drag and Drop Task Handling**
+        function dragStart(event) {
+            event.dataTransfer.setData("task", event.target.innerHTML);
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+        }
+
+        function dropTask(event) {
+            event.preventDefault();
+            const droppedTaskHTML = event.dataTransfer.getData("task");
+            event.target.appendChild(document.createElement("li")).innerHTML = droppedTaskHTML;
+            saveTasks();
+        }
+
+        // **Update Task Colors (Red if < 1 Hour Left)**
+        function updateTaskColors() {
+            let tasks = document.querySelectorAll("#today-tasks li");
+            tasks.forEach(task => {
+                let timeStr = task.innerText.match(/\d{2}:\d{2}/);
+                if (!timeStr) return;
+
+                let [taskHour, taskMinute] = timeStr[0].split(":").map(Number);
+                let now = new Date();
+                let taskTime = new Date();
+                taskTime.setHours(taskHour, taskMinute, 0);
+
+                let timeDiff = (taskTime - now) / (1000 * 60); // Time left in minutes
+
+                if (timeDiff <= 60) task.classList.add("red");
+                else task.classList.remove("red");
+            });
+        }
+
+        // **Save Tasks to localStorage**
+        function saveTasks() {
+            let tasksData = {};
+
+            document.querySelectorAll(".day").forEach(dayDiv => {
+                let dayName = dayDiv.id;
+                let tasks = Array.from(dayDiv.querySelectorAll(".task-list li")).map(li => li.innerHTML);
+                tasksData[dayName] = tasks;
+            });
+
+            tasksData["Today's Tasks"] = Array.from(document.getElementById("today-tasks").querySelectorAll("li")).map(li => li.innerHTML);
+            tasksData["Completed Tasks"] = Array.from(document.getElementById("completed-tasks").querySelectorAll("li")).map(li => li.innerHTML);
+            tasksData["Discarded Tasks"] = Array.from(document.getElementById("discarded-tasks").querySelectorAll("li")).map(li => li.innerHTML);
+
+            localStorage.setItem("tasks", JSON.stringify(tasksData));
+        }
+
+        // **Load Tasks from localStorage**
+        function loadTasks() {
+            let tasksData = JSON.parse(localStorage.getItem("tasks"));
+            if (!tasksData) return;
+
+            Object.keys(tasksData).forEach(dayName => {
+                let taskList = document.getElementById(dayName)?.querySelector(".task-list");
+                if (!taskList && dayName !== "Today's Tasks" && dayName !== "Completed Tasks" && dayName !== "Discarded Tasks") return;
+
+                let targetList = dayName === "Today's Tasks" ? document.getElementById("today-tasks") :
+                                 dayName === "Completed Tasks" ? document.getElementById("completed-tasks") :
+                                 dayName === "Discarded Tasks" ? document.getElementById("discarded-tasks") : taskList;
+
+                tasksData[dayName].forEach(taskHTML => {
+                    let li = document.createElement("li");
+                    li.innerHTML = taskHTML;
+                    targetList.appendChild(li);
+                });
+            });
+
+            updateTaskColors();
+        }
+    </script>
+</body>
+</html>
